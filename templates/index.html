@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>CARPROJECT</title>
+
+    <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.1/raphael-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.4/umd/popper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/justgage/1.2.9/justgage.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.dev.js"></script>
+    <style>
+    body{
+      font-family: Verdana, sans-serif;
+    	font-weight: 400;
+    	font-style:normal;
+    	box-sizing: border-box;
+    }
+    header{
+      background-color:rgba(105,105,105,0.6);
+    	font-size: 400%;
+    	padding:20px 30px;
+    	width:100%;
+    }
+   div.wrapper {
+     position: relative;
+		 width: 100%;
+		 height: 280px;
+   }
+   div.flexbox {
+     display: flex;
+		 flex-wrap: wrap;
+   }
+   div.box{
+     width: 100%;
+   }
+   div.gauge{
+     width: 100%;
+		 height: 240px;
+   }
+   button {
+   	background-color: white;
+     color: black;
+     border: 2px solid #555555;
+
+   	  padding: 16px 32px;
+   	  text-align: center;
+
+   	  display: inline-block;
+   	  font-size: 16px;
+   	  margin: 4px 2px;
+   	  -webkit-transition-duration: 0.4s; /* Safari */
+   	  transition-duration: 0.4s;
+   	  cursor: pointer;
+   		background-color: white;
+     	color: black;
+     	border: 2px solid #555555;
+   	}
+    button.button-clicked{
+      color:white;
+      background-color: #555555;
+    }
+    button.button-back{
+      background-color: white;
+      color: black;
+    }
+
+
+    a {
+      display: block;
+      width: inherit;
+      text-decoration: none;
+      color: #fff
+        }
+
+    footer {
+      padding: 30px 16px;
+      width: 100%;
+      background-color:rgb(58,58,58);
+      color:white;
+      font-weight: normal;
+        }
+
+    </style>
+
+</head>
+
+<body>
+<center>
+  <header>Smart car</header><br><br><br><br>
+    <div class="wrapper">
+        <div class="flexbox">
+          <div class="box">
+            <div class="container text-center">
+                <button type="button" id="start-btn" class="btn btn-info">START</button>
+                <button type="button" id="stop-btn" class="btn btn-info" role="button" disabled="true" disabled>STOP</button>
+                <button type="button" id="autodrive-btn" value='Off' class="btn btn-info" role="button" disabled>AUTODRIVE OFF</button>
+                <br><br><br>
+                <form class="range-field my-4 w-100">
+                    <input id="slider1" type="range" min="0" max="255" value="0" />
+                </form>
+
+                <form class="range-field my-4 w-100">
+                    <input id="slider2" type="range" min="1200" max="1800" value="1500"/>
+                </form>
+            </div>
+            <br><br><br>
+            <div id="g1" class="gauge"></div>
+          </div>
+        </div>
+      </div>
+  </center>
+
+
+
+    <br><br><br><br><br><br><br><br><br><br><br><br>
+    <footer>
+      <span class="lft"> Authors: Francesco Semeraro, Giuseppina Nicassio </span>
+    </footer>
+
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+
+
+
+            namespace = '/CARPROJECT';
+
+            var socket;
+            socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+            //START BTN
+            $('#start-btn').on('click', function (e) {
+                socket.emit('start-btn', { value: 1 });
+                $('#stop-btn').removeAttr("disabled");
+                $('#autodrive-btn').removeAttr("disabled");
+                $('#slider1').removeAttr("disabled");
+            });
+            //STOP BTN
+            $('#stop-btn').on('click', function (e) {
+                socket.emit('stop-btn', { value: 0 });
+                $('#stop-btn').attr('disabled', 'disabled');
+                $('#autodrive-btn').attr('disabled', 'disabled');
+                $('#slider1').attr('disabled', 'disabled');
+            });
+            //AUTODRIVE BTN
+            $('#autodrive-btn').on('click', function (e) {
+                var currentvalue = $('#autodrive-btn').val();
+                if (currentvalue == 'Off') {
+                    $('#autodrive-btn').prop('value', 'On');
+                    $('#autodrive-btn').text('AUTODRIVE ON');
+                    $('#autodrive-btn').button('refresh');
+                    socket.emit('autodrive-btn', { value: 1 });
+                } else {
+                    $('#autodrive-btn').prop('value', 'Off');
+                    $('#autodrive-btn').text('AUTODRIVE OFF');
+                    $('#autodrive-btn').button('refresh');
+                    socket.emit('autodrive-btn', { value: 0 });
+                }
+            });
+
+            // slider1
+            $('#slider1').on('change', function (e) {
+                gauge.value = $('#slider1').val();
+            });
+            $('#slider1').on('input', function (e) {
+                socket.emit('slider1_event', { value: ($('#slider1').val()) });
+            });
+            // slider2
+            $('#slider2').on('input', function (e) {
+                socket.emit('slider2_event', { value: ($('#slider2').val()) });
+            });
+
+
+            cnt1 = 0; //click on start
+            cnt2 = 0; //click on stop
+            cnt3 = 0; //click on autodrive
+
+            $("#start-btn").click(function() {
+              if (cnt1 == 0 ){
+            if (cnt2 == 1) {
+            $("#stop-btn").removeClass('button-clicked');
+            $("#stop-btn").addClass('button-back');
+            cnt2 = 0;}
+            $("#start-btn").removeClass('button-back');
+            $("#start-btn").addClass('button-clicked');
+            cnt1 += 1;
+            }
+          });
+
+            $("#stop-btn").click(function() {
+              if (cnt2 == 0 ){
+            if (cnt1 == 1){
+            $("#start-btn").removeClass('button-clicked');
+            $("#start-btn").addClass('button-back');
+            cnt1 = 0;}
+            if (cnt3 == 1){
+            $("#autodrive-btn").removeClass('button-clicked');
+            $("#autodrive-btn").addClass('button-back');
+            cnt3 = 0;}
+            $("#stop-btn").removeClass('button-back');
+            $("#stop-btn").addClass('button-clicked');
+            cnt2 += 1;
+            }
+          });
+
+            $("#autodrive-btn").click(function() {
+            if (cnt3 == 0 && cnt1 == 1){
+            if (cnt2 == 1){
+            $("#stop-btn").removeClass('button-clicked');
+            $("#stop-btn").addClass('button-back');
+            cnt2 = 0;}
+            $("#autodrive-btn").removeClass('button-back');
+            $("#autodrive-btn").addClass('button-clicked');
+            cnt3 += 1;
+            }
+          });
+
+
+            var g1 = new JustGage({
+              title: 'Trace 0',
+              levelColors: ['#00cc00','#ffff00','#CC0000'],
+              id: 'g1',
+              decimals:5,
+              value:0,
+              min:0,
+              max:17,
+              symbol: '',
+              pointer: true,
+              pointerOptions: {
+              color: '#8e8e93',
+              },
+              gaugeWidthScale: 0.6,
+              counter: true,
+              relativeGaugeSize: true,
+              //donut: true
+            });
+
+            setInterval(function() {
+              g1.refresh($('#slider1').val()/15);
+            }, 100); // update the charts every 1 seconds.
+
+          });
+    </script>
+
+</body>
+
+</html>
