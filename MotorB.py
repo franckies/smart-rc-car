@@ -37,7 +37,7 @@ def turning(motorB_value,autodrive_btn_value,start_btn_value):
                 while motorB_value.poll():
                     Motor_B = motorB_value.recv() #TAKE VALUE FROM SLIDER AND UPDATE MOTORB VALUE
                 pwmturning.set_servo_pulsewidth(12,Motor_B)
-            else: #WHEN AUTODRIVE IS ACTIVE
+            else: #WHEN AUTODRIVE IS ACTIVE:
                 if GPIO.input(17) == 1:
                     last_IR = 0
                     if GPIO.input(4) == 1:
